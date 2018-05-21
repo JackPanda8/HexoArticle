@@ -189,7 +189,7 @@
 
      4. "#pragma"指令
 
-        设置超出Objective-C语言范畴的、额外的编译器选项，如#pragma mark -
+        设置超出Objective-C语言范畴的、额外的编译器选项，如#pragma mark、#pragma clang等
 
    * 宏
 
@@ -215,4 +215,58 @@
 
    * 释放对象的所有者（若一个对象的属性也是在堆内存中创建的，则该对象被调用dealloc释放时，它拥有的属性对象也会由编译器发送release消息，此外编译器还会像该类的父类发送的dealloc消息以完成对象图的生命周期的管理；Foundation框架包含各种集合类[对象集]，集合类拥有存储在其中的对象的所有权，当集合类的实例被释放时，ARC会自动像集合类中的每个对象发送release消息）
 
-2. 
+2. 通过类中属性的getter方法获取属性对象，在ARC下的内存管理方式：ARC会自动插入retain和autorelease。
+
+3. 桥接转换
+
+   * 场景：Apple提供的基于C语言的Core Foundation框架和基于Objective-C的Foundation框架需要互用转换。
+
+   * 方法：直接桥接和ARC桥接。
+
+     1. 直接桥接：只能**手动管理Core Foundation**框架数据类型对象的内存，**ARC下会报错**。分为隐式转换和显示转换，如下所示：
+
+        ```objective-c
+        CFStringRef cstr = CFStringCreateWithCString(NULL, "JackPanda", kCFStringEncodingASCII);
+        //隐式转换
+        NSString* str = cstr;
+        //显示转换
+        NSString* str = (NSString*)cstr;
+        ```
+
+        
+
+     2. ARC桥接转换（ARC下）
+
+        * \__bridge：不改变被转换变量的内存管理方式，即将CF（Core Foundation）类型的对象转换成F（Foundation）类型的对象，变量的内存管理方式仍然是手动管理的，将F类型的对象转换成CF类型的对象，变量的内存管理方式仍然是ARC。所以需要注意内存泄漏和悬挂指针问题。
+        * \__bridge__retained：将F类型的变量转换成CF类型的变量，按照手动方式管理内存。
+        * \__bridge__transfer：将CF类型的变量转换成F类型的变量，按照ARC方式管理内存。
+
+        使用方法：(桥接转换标记  目的数据类型) 变量名，如( \__bridge__transfer NSString*) cstr。
+
+---
+
+### 第七章 运行时系统 
+
+1. OC运行时的动态特性包括：
+
+   * 动态类型（id）
+   * 消息机制（objc_msgSend）
+   * 动态绑定（多态性，给id类型的对象发送消息）
+   * 动态决议（通过重写NSObject的resolveInstanceMethod:方法或者resolveClassMethod:方法动态地为类添加方法的实现，通过调用class_addMethod()方法）
+   * 动态加载（根据需要在运行时动态加载NSBundle包，包括与应用程序相关的**代码**与**数据资源**、软件框架或库、自定义代码的**插件**）
+   * 内省（NSObject类中的用于内省的API，方便在运行时查询与方法、类与对象等的信息，如isKindOfClass:、responseToSelector:、是否遵守某协议的conformsToProtocol:、为选择器提取方法签名的methodSignatureForSelector:）
+
+2. 创建选择器(SEL)：@selector()方式在编译期创建，NSSelectorFromString()方式在运行时创建。
+
+   ```objective-c
+   //编译器创建SEL选择器
+   SEL sel1 = @selector(sumAdd:plus:);
+   //运行时创建SEL选择器(Foundation框架)
+   SEL sel2 = NSSelectorFromString(@"sumAdd:plus:");
+   ```
+
+---
+
+### 第八章 运行时系统的结构 
+
+1. 
